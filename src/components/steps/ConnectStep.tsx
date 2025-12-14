@@ -9,7 +9,7 @@ interface ConnectStepProps {
 }
 
 export function ConnectStep({ onComplete }: ConnectStepProps) {
-  const { connect, connectors, isPending, error } = useConnect();
+  const { connect, connectors, isPending, error, reset } = useConnect();
   const { isConnected } = useAccount();
 
   useEffect(() => {
@@ -18,7 +18,24 @@ export function ConnectStep({ onComplete }: ConnectStepProps) {
     }
   }, [isConnected, onComplete]);
 
-  const injectedConnector = connectors.find((c) => c.id === 'injected');
+  // Reset error state after 5 seconds
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => reset(), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [error, reset]);
+
+  // Find the MetaMask connector (id can be 'metaMask', 'io.metamask', or 'injected')
+  const metaMaskConnector = connectors.find(
+    (c) => c.id === 'io.metamask' || c.id === 'metaMask' || c.id === 'injected'
+  );
+
+  const handleConnect = () => {
+    if (metaMaskConnector) {
+      connect({ connector: metaMaskConnector });
+    }
+  };
 
   return (
     <div className="text-center">
@@ -45,20 +62,28 @@ export function ConnectStep({ onComplete }: ConnectStepProps) {
       </div>
 
       <ActionButton
-        onClick={() => injectedConnector && connect({ connector: injectedConnector })}
+        onClick={handleConnect}
         loading={isPending}
-        disabled={!injectedConnector}
+        disabled={!metaMaskConnector}
       >
         {isPending ? 'Connecting...' : 'Connect MetaMask'}
       </ActionButton>
 
       {error && (
-        <p className="mt-4 text-red-500 text-sm">
-          {error.message || 'Failed to connect. Please try again.'}
-        </p>
+        <div className="mt-4">
+          <p className="text-red-500 text-sm mb-2">
+            {error.message || 'Failed to connect. Please try again.'}
+          </p>
+          <button
+            onClick={() => reset()}
+            className="text-blue-500 hover:text-blue-600 text-sm underline"
+          >
+            Try Again
+          </button>
+        </div>
       )}
 
-      {!injectedConnector && (
+      {!metaMaskConnector && (
         <p className="mt-4 text-yellow-600 text-sm">
           MetaMask not detected. Please install MetaMask to continue.
         </p>

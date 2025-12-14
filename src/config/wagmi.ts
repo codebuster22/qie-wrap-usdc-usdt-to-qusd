@@ -4,7 +4,11 @@ import { qieMainnet } from './chains';
 
 export const config = createConfig({
   chains: [qieMainnet],
-  connectors: [injected()],
+  connectors: [
+    injected({
+      target: 'metaMask',
+    }),
+  ],
   transports: {
     [qieMainnet.id]: http(),
   },
